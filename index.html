@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corrida Hipotecaria · Mi 45%</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="title-block">
+      <div class="eyebrow">Corrida Hipotecaria · Mi parte (45%)</div>
+      <h1>Corrida <em>personal</em></h1>
+      <p>Simulador enfocado en mi 45% de la propiedad. La parte de mi pareja (55%) ya está cubierta por separado e incluye sus propios gastos notariales.</p>
+    </div>
+    <div class="meta">
+      <span>Firma tentativa</span>
+      <span class="big">01 · OCT · 2026</span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEFT: INPUTS -->
+    <div class="inputs">
+
+      <!-- 1. Property -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Propiedad & participación</h2>
+          <span class="num">01</span>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Valor total propiedad <span class="hint">MXN</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="precioCasa" class="has-prefix" value="14500000" step="100000">
+            </div>
+          </div>
+          <div class="field">
+            <label>Mi % de participación</label>
+            <div class="input-wrap">
+              <input type="number" id="participacion" class="has-suffix" value="45" step="1" min="1" max="100">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="result-row total">
+          <span class="label">Mi parte del valor</span>
+          <span class="value" id="miParte">—</span>
+        </div>
+      </div>
+
+      <!-- 2. Enganche líquido -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Mi ahorro en firme a octubre 2026</h2>
+          <span class="num">02</span>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Ahorro total en firme <span class="hint">incluye subcuenta</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="ahorroFirme" class="has-prefix" value="3760000" step="10000">
+            </div>
+          </div>
+          <div class="field">
+            <label>Ahorro extra a capital <span class="hint">realista · editable</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="ahorroExtra" class="has-prefix" value="50000" step="10000">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>De los cuales: saldo subcuenta Infonavit <span class="hint">ya incluido arriba</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="saldoSubcuenta" class="has-prefix" value="879000" step="5000">
+            </div>
+          </div>
+          <div class="field">
+            <label>Ahorro líquido efectivo</label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="text" id="ahorroLiquidoEfectivo" class="has-prefix readonly" readonly>
+            </div>
+          </div>
+        </div>
+        <div class="result-row total">
+          <span class="label">Recurso propio total</span>
+          <span class="value" id="engancheLiquido">—</span>
+        </div>
+        <div class="note">El saldo en subcuenta ($879K) ya forma parte de los $3,760K. Se aplica al crédito Infonavit al momento de firmar. El ahorro líquido efectivo es lo que tienes disponible en efectivo.</div>
+      </div>
+
+      <!-- 3. Infonavit -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Crédito Infonavit (Cofinavit)</h2>
+          <span class="num">03</span>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Monto del crédito Infonavit <span class="hint">MXN</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="creditoInfonavit" class="has-prefix" value="1073433.42" step="1000">
+            </div>
+          </div>
+          <div class="field">
+            <label>Plazo <span class="hint">años</span></label>
+            <div class="plazo-group" data-target="plazoInfonavit">
+              <button class="plazo-btn" data-val="10">10</button>
+              <button class="plazo-btn" data-val="15">15</button>
+              <button class="plazo-btn active" data-val="20">20</button>
+            </div>
+            <input type="hidden" id="plazoInfonavit" value="20">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Tasa anual <span class="hint">%</span></label>
+            <div class="input-wrap">
+              <input type="number" id="tasaInfonavit" class="has-suffix" value="10.45" step="0.01">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>CAT <span class="hint">%</span></label>
+            <div class="input-wrap">
+              <input type="number" id="catInfonavit" class="has-suffix" value="11.40" step="0.01">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="row three">
+          <div class="field">
+            <label>Retención mensual <span class="hint">descuento nómina</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="retencionMensual" class="has-prefix" value="10931.02" step="1">
+            </div>
+          </div>
+          <div class="field">
+            <label>Fondo Protección Pagos <span class="hint">mensual</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="fondoProteccion" class="has-prefix" value="213.63" step="1">
+            </div>
+          </div>
+          <div class="field">
+            <label>Aportación patronal <span class="hint">mensual · a favor</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="aportacionPatronal" class="has-prefix" value="4457.78" step="1">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Gastos de titulación <span class="hint">% s/ crédito</span></label>
+            <div class="input-wrap">
+              <input type="number" id="gastosTitulacionPct" class="has-suffix" value="1.4" step="0.1">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Comisión apertura Infonavit <span class="hint">MXN</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="comisionInfonavit" class="has-prefix" value="0" step="100">
+            </div>
+          </div>
+        </div>
+        <div class="note">Retención mensual = lo que te descuenta Infonavit de tu nómina. La aportación patronal (5% sobre salario integrado) se abona a tu subcuenta y reduce tu carga efectiva.</div>
+      </div>
+
+      <!-- 4. Bank -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Crédito bancario</h2>
+          <span class="num">04</span>
+        </div>
+        <div class="bank-tabs">
+          <button class="bank-tab active" data-bank="banamex">Banamex · Pre-aprobado</button>
+          <button class="bank-tab" data-bank="banorte">Banorte · Comparar</button>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Monto crédito banco <span class="hint">MXN · incluye gastos notariales</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="creditoBanco" class="has-prefix" value="2100000" step="10000">
+            </div>
+          </div>
+          <div class="field">
+            <label>Plazo <span class="hint">años</span></label>
+            <div class="plazo-group" data-target="plazoBanco">
+              <button class="plazo-btn" data-val="10">10</button>
+              <button class="plazo-btn" data-val="15">15</button>
+              <button class="plazo-btn active" data-val="20">20</button>
+            </div>
+            <input type="hidden" id="plazoBanco" value="20">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Tasa anual <span class="hint">%</span></label>
+            <div class="input-wrap">
+              <input type="number" id="tasaBanco" class="has-suffix" value="10.25" step="0.01">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>CAT <span class="negotiate">Negociar</span><span class="hint">%</span></label>
+            <div class="input-wrap">
+              <input type="number" id="catBanco" class="has-suffix" value="11.50" step="0.01">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Comisión de apertura <span class="hint">MXN</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="comisionBanco" class="has-prefix" value="0" step="1000">
+            </div>
+          </div>
+          <div class="field">
+            <label>Avalúo <span class="hint">0 si incluido</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="avaluo" class="has-prefix" value="0" step="500">
+            </div>
+          </div>
+        </div>
+
+        <div class="toggle-row" style="margin-top:18px;padding:12px 14px;background:var(--bg-soft);border-radius:3px;display:block">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--ink-muted);text-transform:uppercase;margin-bottom:10px">Configuración de seguros · impacta CAT</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+            <button class="seguro-preset" data-preset="banamex" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 4px;background:var(--bg);border:1px solid var(--line);border-radius:2px;cursor:pointer;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Banamex bundle</button>
+            <button class="seguro-preset active" data-preset="propio" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 4px;background:var(--ink);border:1px solid var(--ink);border-radius:2px;cursor:pointer;color:var(--bg);text-transform:uppercase;letter-spacing:0.04em">Pólizas propias</button>
+            <button class="seguro-preset" data-preset="ninguno" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 4px;background:var(--bg);border:1px solid var(--line);border-radius:2px;cursor:pointer;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Sin seguros</button>
+          </div>
+          <div style="font-size:11px;color:var(--ink-muted);margin-top:10px;font-style:italic" id="seguroPresetNote">Pólizas propias: daños ya cubierto por cuota de mantenimiento; vida cubierto por seguro de empresa. Negociar CAT ~11.5% con Banamex.</div>
+        </div>
+
+        <div class="toggle-row" style="margin-top:14px">
+          <div class="toggle" id="tgSeguroVida" data-target="seguroVidaWrap"></div>
+          <span>Seguro de vida por Banamex</span>
+        </div>
+        <div id="seguroVidaWrap" class="row" style="display:none">
+          <div class="field">
+            <label>Seguro de vida mensual <span class="hint">MXN</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="seguroVida" class="has-prefix" value="450" step="50">
+            </div>
+          </div>
+          <div class="field">
+            <label>Prima anual</label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="text" id="seguroVidaAnual" class="has-prefix readonly" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div class="toggle-row" style="margin-top:10px">
+          <div class="toggle" id="tgSeguroDanos" data-target="seguroDanosWrap"></div>
+          <span>Seguro de daños por Banamex</span>
+        </div>
+        <div id="seguroDanosWrap" class="row">
+          <div class="field">
+            <label>Seguro de daños mensual <span class="hint">MXN</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="seguroDanos" class="has-prefix" value="600" step="50">
+            </div>
+          </div>
+          <div class="field">
+            <label>Prima anual</label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="text" id="seguroDanosAnual" class="has-prefix readonly" readonly>
+            </div>
+          </div>
+        </div>
+        <div class="note">Banamex pre-aprobó tasa 10.25% pero CAT 15% por seguros incluidos — negociar exclusión o precio menor. Comparar con Banorte. Solicitar en firme 01/jul/2026.</div>
+
+        <div class="breakdown-block" style="margin-top:14px;background:rgba(122,106,79,0.06);border-left:3px solid var(--accent)">
+          <div class="bt" style="color:var(--accent)">Estrategia · notario consolidado al crédito</div>
+          <div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:10px">
+            Crédito de $2.1M (vs $1.65M puro) incluye los ~$450K de gastos notariales a cargo mío. Financiado a tasa hipotecaria 10.25% — muy inferior a crédito personal (18–28%). Los pre-pagos del finiquito pulverizan el efecto de los intereses extra.
+          </div>
+          <div class="result-row" style="border-bottom:1px dotted var(--line-soft);padding:6px 0">
+            <span class="label" style="font-size:12px">Costo hipotecario neto (10.25%, 20a)</span>
+            <span class="value" style="color:var(--positive)">≈ tasa efectiva ~10.25%</span>
+          </div>
+          <div class="result-row" style="border-bottom:none;padding:6px 0">
+            <span class="label" style="font-size:12px">Crédito personal alternativo típico</span>
+            <span class="value" style="color:var(--negative)">18–28% CAT</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Closing costs -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Gastos notariales (mi 45%)</h2>
+          <span class="num">05</span>
+        </div>
+
+        <div class="toggle-row" style="margin-bottom:14px;padding:10px 14px;background:var(--bg-soft);border-radius:3px">
+          <div class="toggle active" id="tgNotarioConsolidado"></div>
+          <span style="font-weight:500;color:var(--ink)">Notario consolidado al crédito Banamex</span>
+          <span style="color:var(--ink-muted);font-size:11px;margin-left:auto">Recomendado ✓</span>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Gastos notariales totales <span class="hint">toda la op.</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="gastosNotarialesTotal" class="has-prefix" value="1000000" step="10000">
+            </div>
+          </div>
+          <div class="field">
+            <label>% a cargo mío</label>
+            <div class="input-wrap">
+              <input type="number" id="gastosPct" class="has-suffix" value="45" step="1">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="result-row total">
+          <span class="label">Mi parte de gastos notariales</span>
+          <span class="value" id="miGastosNotariales">—</span>
+        </div>
+        <div class="note">Negociable a la baja sobre la base gravable. Incluye ISAI, honorarios notario + IVA, derechos RPP, avisos, certificados. Rango estimado total: $600K–$1M. Al estar consolidado al crédito, no compromete liquidez al cierre.</div>
+      </div>
+
+      <!-- 6. Liquidación informativa -->
+      <div class="section info-section">
+        <div class="section-header">
+          <h2>Liquidación Arcadis</h2>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span class="tag">Informativo</span>
+            <span class="num">06</span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Monto neto estimado <span class="hint">MXN</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="liquidacion" class="has-prefix" value="1300000" step="50000">
+            </div>
+          </div>
+          <div class="field">
+            <label>Fecha tentativa <span class="hint">post-cierre</span></label>
+            <input type="text" id="liquidacionFecha" value="Post 01/10/2026">
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="ic-title">Colchón post-cierre · planeación</div>
+          <div class="ic-amount" id="liquidacionDisplay">—</div>
+          <div class="ic-sub">Disponible después de la firma de escrituras. NO forma parte del enganche. Referencia para amortización anticipada, reserva de emergencia, o capital de trabajo Smability.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div class="results">
+
+      <div class="summary-card">
+        <div class="eyebrow">Pago mensual total estimado</div>
+        <div class="big-number"><span class="currency">MXN</span><span id="pagoMensualTotal">0</span></div>
+        <div class="split">
+          <div class="split-item">
+            <div class="label">Infonavit (retención)</div>
+            <div class="value" id="pagoInfonavit">—</div>
+          </div>
+          <div class="split-item">
+            <div class="label">Banco</div>
+            <div class="value" id="pagoBanco">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="verifyStrip" class="verify-strip">
+        <strong>Verificación:</strong> <span id="verifyText">—</span>
+      </div>
+
+      <!-- Structure -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Estructura financiera total</h2>
+          <span class="num">A</span>
+        </div>
+
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--ink-muted);text-transform:uppercase;margin-bottom:6px;padding-left:2px">Recursos totales</div>
+        <div class="result-list" style="margin-bottom:16px">
+          <div class="result-row"><span class="label">Recurso propio <span class="sub">Ahorro + subcuenta</span></span><span class="value" id="rEnganche">—</span></div>
+          <div class="result-row"><span class="label">Crédito Infonavit</span><span class="value" id="rInfonavitNeto">—</span></div>
+          <div class="result-row"><span class="label">Crédito Banamex <span class="sub" id="rBancoSub">—</span></span><span class="value" id="rBanco">—</span></div>
+          <div class="result-row total"><span class="label">Total recursos</span><span class="value" id="rTotalRecursos">—</span></div>
+        </div>
+
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--ink-muted);text-transform:uppercase;margin-bottom:6px;padding-left:2px">Aplicación de recursos</div>
+        <div class="result-list">
+          <div class="result-row"><span class="label">Valor propiedad</span><span class="value" id="rPrecio">—</span></div>
+          <div class="result-row"><span class="label">Mi parte del valor <span class="sub" id="rParticipacion">—</span></span><span class="value" id="rMiParte">—</span></div>
+          <div class="result-row"><span class="label">Gastos notariales <span class="sub" id="rNotarioSub">—</span></span><span class="value" id="rNotarioVal">—</span></div>
+          <div class="result-row"><span class="label">Titulación Infonavit <span class="sub">Líquido · obligatorio</span></span><span class="value" id="rTitulacionVal">—</span></div>
+          <div class="result-row"><span class="label">Comisiones + avalúo</span><span class="value" id="rComisionesVal">—</span></div>
+          <div class="result-row total"><span class="label">Total aplicación</span><span class="value" id="rNecesidadTotal">—</span></div>
+          <div class="result-row highlight"><span class="label" id="rBalanceLabel">Diferencia</span><span class="value" id="rBalance">—</span></div>
+        </div>
+      </div>
+
+      <!-- Infonavit breakdown -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Corrida · Infonavit</h2>
+          <span class="num">B</span>
+        </div>
+        <div class="result-list">
+          <div class="result-row"><span class="label">Monto del crédito</span><span class="value" id="infPrincipal">—</span></div>
+          <div class="result-row"><span class="label">Tasa anual · CAT</span><span class="value" id="infTasas">—</span></div>
+          <div class="result-row"><span class="label">Plazo</span><span class="value" id="infPlazo">—</span></div>
+          <div class="result-row"><span class="label">Pago teórico (P+I)</span><span class="value" id="infMensualidad">—</span></div>
+          <div class="result-row"><span class="label">Retención mensual Infonavit <span class="sub">Descuento de nómina real</span></span><span class="value" id="infRetencion">—</span></div>
+          <div class="result-row"><span class="label">Fondo de Protección de Pagos</span><span class="value" id="infFPP">—</span></div>
+          <div class="result-row total"><span class="label">Egreso mensual total Infonavit</span><span class="value" id="infEgresoTotal">—</span></div>
+          <div class="result-row"><span class="label">Aportación patronal <span class="sub">A favor · abono a subcuenta</span></span><span class="value" id="infAportPatronal">—</span></div>
+          <div class="result-row"><span class="label">Total intereses en el plazo</span><span class="value" id="infInteresesTotales">—</span></div>
+          <div class="result-row"><span class="label">Gastos de titulación</span><span class="value" id="infGastosTit">—</span></div>
+        </div>
+      </div>
+
+      <!-- Bank breakdown -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Corrida · Banco <span id="bankName" style="color:var(--accent);font-style:italic">Banamex</span></h2>
+          <span class="num">C</span>
+        </div>
+        <div class="result-list">
+          <div class="result-row"><span class="label">Monto del crédito</span><span class="value" id="bcoPrincipal">—</span></div>
+          <div class="result-row"><span class="label">Tasa anual · CAT</span><span class="value" id="bcoTasas">—</span></div>
+          <div class="result-row"><span class="label">Plazo</span><span class="value" id="bcoPlazo">—</span></div>
+          <div class="result-row"><span class="label">Pago mensual (P+I)</span><span class="value" id="bcoMensualidad">—</span></div>
+          <div class="result-row"><span class="label">Seguro de vida</span><span class="value" id="bcoSegVida">—</span></div>
+          <div class="result-row"><span class="label">Seguro de daños</span><span class="value" id="bcoSegDanos">—</span></div>
+          <div class="result-row total"><span class="label">Pago mensual total banco</span><span class="value" id="bcoTotal">—</span></div>
+          <div class="result-row"><span class="label">Total intereses en el plazo</span><span class="value" id="bcoInteresesTotales">—</span></div>
+          <div class="result-row"><span class="label">Comisión apertura + avalúo</span><span class="value" id="bcoComision">—</span></div>
+        </div>
+      </div>
+
+      <!-- Closing costs -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Gastos notariales (mi parte)</h2>
+          <span class="num">D</span>
+        </div>
+        <div class="result-list">
+          <div class="result-row"><span class="label">Gastos notariales totales</span><span class="value" id="gnTotal">—</span></div>
+          <div class="result-row"><span class="label">Mi participación <span class="sub" id="gnPct">—</span></span><span class="value" id="gnMiParte">—</span></div>
+          <div class="result-row"><span class="label">Gastos titulación Infonavit <span class="sub">Aparte del notario</span></span><span class="value" id="gnTitulacion">—</span></div>
+          <div class="result-row"><span class="label">Comisión banco + avalúo</span><span class="value" id="gnBanco">—</span></div>
+          <div class="result-row total"><span class="label">Mi necesidad de gastos</span><span class="value" id="gnTotalMi">—</span></div>
+        </div>
+      </div>
+
+      <!-- Deficit -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Balance líquido</h2>
+          <span class="num">E</span>
+        </div>
+        <div class="result-list">
+          <div class="result-row"><span class="label">Recurso propio total</span><span class="value" id="balEnganche">—</span></div>
+          <div class="result-row"><span class="label">Mi parte del valor</span><span class="value" id="balDiferencia">—</span></div>
+          <div class="result-row"><span class="label">Gastos a cubrir</span><span class="value" id="balGastos">—</span></div>
+          <div class="result-row total"><span class="label">Diferencia neta</span><span class="value" id="balDiferenciaNeta">—</span></div>
+        </div>
+        <div id="deficitBox" class="deficit-box positive">
+          <div class="label">
+            <span id="deficitLabel">Excedente</span>
+            <span class="sub" id="deficitSub">—</span>
+          </div>
+          <div class="amount" id="deficitAmount">—</div>
+        </div>
+        <div class="breakdown-block">
+          <div class="bt">Ajuste sugerido · crédito bancario</div>
+          <div class="result-row"><span class="label">Crédito banco actual</span><span class="value" id="sugBancoOrig">—</span></div>
+          <div class="result-row"><span class="label">Excedente a solicitar</span><span class="value" id="sugExcedente">—</span></div>
+          <div class="result-row total"><span class="label">Crédito banco sugerido</span><span class="value" id="sugBancoFinal">—</span></div>
+        </div>
+      </div>
+
+      <!-- ALERTA DE DÉFICIT -->
+      <div class="section" id="deficitAlertSection" style="border-left:3px solid var(--positive);background:linear-gradient(135deg,rgba(61,90,61,0.04),var(--bg-card))">
+        <div class="section-header">
+          <h2 id="deficitAlertTitle">Validación de liquidez al cierre</h2>
+          <span class="num" id="deficitAlertNum">✓</span>
+        </div>
+
+        <div id="deficitMainStatus" style="padding:14px 16px;background:rgba(61,90,61,0.08);border-radius:3px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div>
+            <div style="font-family:'Fraunces',serif;font-size:15px;color:var(--ink);font-weight:500" id="deficitMainLabel">Todo cuadra al cierre</div>
+            <div style="font-size:11px;color:var(--ink-muted);margin-top:2px" id="deficitMainSub">—</div>
+          </div>
+          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:500" id="deficitMainAmount">—</div>
+        </div>
+
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px;padding-left:2px">Desglose por concepto</div>
+
+        <div class="result-list">
+          <div class="result-row" id="checkEnganche">
+            <span class="label"><span class="deficit-icon" style="margin-right:6px">✓</span>Enganche mi parte (45%)</span>
+            <span class="value">—</span>
+          </div>
+          <div class="result-row" id="checkNotario">
+            <span class="label"><span class="deficit-icon" style="margin-right:6px">✓</span>Gastos notariales líquidos</span>
+            <span class="value">—</span>
+          </div>
+          <div class="result-row" id="checkTitulacion">
+            <span class="label"><span class="deficit-icon" style="margin-right:6px">✓</span>Gastos titulación Infonavit</span>
+            <span class="value">—</span>
+          </div>
+          <div class="result-row" id="checkComisiones">
+            <span class="label"><span class="deficit-icon" style="margin-right:6px">✓</span>Comisión apertura + avalúo</span>
+            <span class="value">—</span>
+          </div>
+        </div>
+
+        <div id="deficitSugerencias" style="margin-top:14px;padding:14px 16px;background:var(--bg-soft);border-radius:3px;display:none">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--negative);text-transform:uppercase;margin-bottom:10px">Opciones para cubrir déficit</div>
+          <div id="deficitOpcionesList"></div>
+        </div>
+      </div>
+
+      <!-- SIMULADOR DE FINIQUITO -->
+      <div class="section simulator-section">
+        <div class="section-header">
+          <h2>Simulador · Pre-pagos a créditos</h2>
+          <span class="num">F</span>
+        </div>
+
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-pane="paneFiniquito"><span class="tab-dot" id="dotFiniquito"></span>Finiquito</button>
+          <button class="sub-tab" data-pane="paneAhorro"><span class="tab-dot" id="dotAhorro"></span>Ahorro Oct–Ene</button>
+          <button class="sub-tab" data-pane="paneCombinado"><span class="tab-dot"></span>Escenario combinado</button>
+        </div>
+
+        <!-- ========= PANE 1: FINIQUITO ========= -->
+        <div class="tab-pane active" id="paneFiniquito">
+          <div class="sim-header">
+            <div class="sim-title-group">
+              <div class="toggle big-toggle" id="tgFiniquito"></div>
+              <div>
+                <div class="sim-label">Aplicar finiquito a créditos</div>
+                <div style="font-size:11px;color:var(--ink-muted);margin-top:2px">Ocurre 30/Ene/2027 · Liquida Infonavit; remanente a Banamex</div>
+              </div>
+            </div>
+            <div class="sim-status" id="finiquitoStatus">Inactivo</div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Monto finiquito neto <span class="hint">MXN</span></label>
+              <div class="input-wrap">
+                <span class="prefix">$</span>
+                <input type="number" id="finiquitoMonto" class="has-prefix" value="1300000" step="50000">
+              </div>
+            </div>
+            <div class="field">
+              <label>Penalización pre-pago <span class="hint">% · opcional</span></label>
+              <div class="input-wrap">
+                <input type="number" id="penalizacion" class="has-suffix" value="0" step="0.1">
+                <span class="suffix">%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sim-flow">
+            <div class="sim-step" id="simStep1">
+              <div class="step-num">Paso 01</div>
+              <div class="step-title">Finiquito disponible</div>
+              <div class="step-value" id="simFiniquitoNeto">—</div>
+              <div class="step-sub" id="simFiniquitoSub">Monto neto tras penalización</div>
+            </div>
+            <div class="sim-step" id="simStep2">
+              <div class="step-num">Paso 02</div>
+              <div class="step-title">Liquidar Infonavit</div>
+              <div class="step-value" id="simPagoInfonavit">—</div>
+              <div class="step-sub" id="simInfonavitSub">Saldo completo</div>
+            </div>
+            <div class="sim-step" id="simStep3">
+              <div class="step-num">Paso 03</div>
+              <div class="step-title">Abono a banco</div>
+              <div class="step-value" id="simAbonoBanco">—</div>
+              <div class="step-sub" id="simBancoSub">Remanente aplicado</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========= PANE 2: AHORRO PRE-LIQUIDACIÓN ========= -->
+        <div class="tab-pane" id="paneAhorro">
+          <div class="sim-header">
+            <div class="sim-title-group">
+              <div class="toggle big-toggle" id="tgAhorro"></div>
+              <div>
+                <div class="sim-label">Ahorro + abonos Oct–Ene</div>
+                <div style="font-size:11px;color:var(--ink-muted);margin-top:2px">Abonos mensuales directos a Banamex · aguinaldo · aplicación final 30/ene</div>
+              </div>
+            </div>
+            <div class="sim-status" id="ahorroStatus">Inactivo</div>
+          </div>
+
+          <!-- OBJETIVO DE MENSUALIDAD -->
+          <div style="background:var(--ink);color:var(--bg);padding:18px 20px;border-radius:3px;margin-bottom:16px;position:relative;overflow:hidden">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--accent-soft);text-transform:uppercase;margin-bottom:10px">Objetivo · mensualidad post-aplicación</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center">
+              <div>
+                <label style="display:block;font-size:11px;color:rgba(244,241,236,0.6);margin-bottom:6px;letter-spacing:0.02em">Mensualidad objetivo (P+I + seguros)</label>
+                <div style="position:relative">
+                  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(244,241,236,0.5)">$</span>
+                  <input type="number" id="objetivoMensual" value="15999" step="100"
+                    style="width:100%;font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--bg);background:rgba(255,255,255,0.08);border:1px solid rgba(244,241,236,0.2);border-radius:2px;padding:10px 12px 10px 26px">
+                </div>
+                <div style="font-size:10px;color:rgba(244,241,236,0.45);margin-top:6px;font-style:italic">Meta: debajo de barrera psicológica $16K</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent-soft);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Ahorro mensual requerido</div>
+                <div style="font-family:'Fraunces',serif;font-size:32px;color:var(--bg);font-weight:500;line-height:1" id="ahorroRequerido">—</div>
+                <div style="font-size:11px;color:rgba(244,241,236,0.5);margin-top:6px" id="ahorroRequeridoSub">Calculando...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row three">
+            <div class="field">
+              <label>Ahorro mensual a aplicar <span class="hint">MXN · editable</span></label>
+              <div class="input-wrap">
+                <span class="prefix">$</span>
+                <input type="number" id="ahorroMensual" class="has-prefix" value="63302" step="500">
+              </div>
+            </div>
+            <div class="field">
+              <label>Meses de acumulación <span class="hint">Oct–Ene</span></label>
+              <input type="number" id="mesesAhorro" value="4" step="1" min="1" max="12">
+            </div>
+            <div class="field">
+              <label>Aguinaldo neto <span class="hint">Dic 2026</span></label>
+              <div class="input-wrap">
+                <span class="prefix">$</span>
+                <input type="number" id="aguinaldo" class="has-prefix" value="85000" step="5000">
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="btn primary" id="btnAutoAhorro" style="flex:1;padding:10px 14px;font-size:10px">Usar ahorro óptimo calculado</button>
+            <button class="btn" id="btnClearAhorro" style="flex:0 0 140px;padding:10px 14px;font-size:10px">Limpiar</button>
+          </div>
+
+          <div class="timeline">
+            <div class="timeline-item">
+              <span class="ti-month">OCT 2026</span>
+              <span class="ti-desc">Abono directo a Banamex</span>
+              <span class="ti-amount" id="tlOct">—</span>
+            </div>
+            <div class="timeline-item">
+              <span class="ti-month">NOV 2026</span>
+              <span class="ti-desc">Abono directo a Banamex</span>
+              <span class="ti-amount" id="tlNov">—</span>
+            </div>
+            <div class="timeline-item highlight">
+              <span class="ti-month">DIC 2026</span>
+              <span class="ti-desc">Abono mensual + aguinaldo</span>
+              <span class="ti-amount" id="tlDic">—</span>
+            </div>
+            <div class="timeline-item">
+              <span class="ti-month">ENE 2027</span>
+              <span class="ti-desc">Abono directo a Banamex</span>
+              <span class="ti-amount" id="tlEne">—</span>
+            </div>
+            <div class="timeline-item highlight">
+              <span class="ti-month">30 ENE 2027</span>
+              <span class="ti-desc"><strong style="color:var(--ink)">Aplicación finiquito (tras pago mensualidad enero)</strong></span>
+              <span class="ti-amount" id="tlTotalAhorro">—</span>
+            </div>
+          </div>
+
+          <div class="mini-grid">
+            <div class="mini-card">
+              <div class="mc-label">Σ Abonos mensuales</div>
+              <div class="mc-value" id="miMensuales">—</div>
+            </div>
+            <div class="mini-card">
+              <div class="mc-label">+ Aguinaldo</div>
+              <div class="mc-value" id="miAguinaldo">—</div>
+            </div>
+            <div class="mini-card">
+              <div class="mc-label">Total aportado Oct–Ene</div>
+              <div class="mc-value" id="miTotal">—</div>
+            </div>
+            <div class="mini-card">
+              <div class="mc-label">Abono extra Banamex</div>
+              <div class="mc-value" id="miAbonoBanamex" style="color:var(--accent)">—</div>
+            </div>
+          </div>
+
+          <div class="note" style="margin-top:14px">
+            <strong>Estrategia:</strong> Los abonos mensuales (oct–ene) se aplican directo a capital Banamex cada mes, no se acumulan. Esto es ligeramente más eficiente que acumular porque el capital reduce antes y genera menos intereses. El aguinaldo se aplica en diciembre. El finiquito (neto tras Infonavit) se aplica el 30/ene junto con la mensualidad de enero.
+          </div>
+        </div>
+
+        <!-- ========= PANE 3: ESCENARIO COMBINADO ========= -->
+        <div class="tab-pane" id="paneCombinado">
+          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--line);border-radius:3px;margin-bottom:16px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--ink-muted);text-transform:uppercase;margin-bottom:8px">Activa los módulos en las pestañas anteriores</div>
+            <div style="display:flex;gap:18px;font-size:12px;color:var(--ink-soft)" id="comboStatusRow">
+              <div><span id="comboFiniquitoStatus" style="color:var(--ink-muted)">○</span> Finiquito</div>
+              <div><span id="comboAhorroStatus" style="color:var(--ink-muted)">○</span> Ahorro Oct–Ene</div>
+            </div>
+          </div>
+
+          <div class="timeline">
+            <div class="timeline-item">
+              <span class="ti-month">01 OCT 2026</span>
+              <span class="ti-desc">Firma de escrituras · inicio créditos</span>
+              <span class="ti-amount">—</span>
+            </div>
+            <div class="timeline-item">
+              <span class="ti-month">OCT–ENE</span>
+              <span class="ti-desc">Ahorro acumulado mientras sigues en Arcadis</span>
+              <span class="ti-amount" id="comboAhorroAcum">—</span>
+            </div>
+            <div class="timeline-item highlight">
+              <span class="ti-month">30 ENE 2027</span>
+              <span class="ti-desc"><strong style="color:var(--ink)">Separación + aplicación combinada a Banamex</strong></span>
+              <span class="ti-amount" id="comboAplicacion">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========= COMPARACIÓN (compartida) ========= -->
+        <div class="sim-comparison">
+          <div class="sim-side">
+            <div class="side-label">Escenario actual</div>
+            <div class="side-big" id="simPagoAntes">—</div>
+            <div class="side-row"><span class="lbl">Infonavit</span><span class="val" id="simInfAntes">—</span></div>
+            <div class="side-row"><span class="lbl">Banco</span><span class="val" id="simBcoAntes">—</span></div>
+            <div class="side-row"><span class="lbl">Deuda total pendiente</span><span class="val" id="simDeudaAntes">—</span></div>
+            <div class="side-row"><span class="lbl">Intereses restantes</span><span class="val" id="simIntAntes">—</span></div>
+          </div>
+          <div class="sim-side after">
+            <div class="side-label" id="sideLabelDespues">Después</div>
+            <div class="side-big" id="simPagoDespues">—</div>
+            <div class="side-row"><span class="lbl">Infonavit</span><span class="val" id="simInfDespues">—</span></div>
+            <div class="side-row"><span class="lbl">Banco (saldo ajustado)</span><span class="val" id="simBcoDespues">—</span></div>
+            <div class="side-row"><span class="lbl">Deuda total pendiente</span><span class="val" id="simDeudaDespues">—</span></div>
+            <div class="side-row"><span class="lbl">Intereses restantes</span><span class="val" id="simIntDespues">—</span></div>
+          </div>
+        </div>
+
+        <div class="savings-highlight">
+          <div>
+            <div class="sh-label">Ahorro mensual</div>
+            <div class="sh-sublabel" id="simAhorroSub">Activa módulos para ver el impacto</div>
+          </div>
+          <div class="sh-amount" id="simAhorroMensualResult">—</div>
+        </div>
+
+        <div class="savings-highlight" style="background:var(--accent);margin-top:10px">
+          <div>
+            <div class="sh-label" style="color:rgba(255,255,255,0.85)">Ahorro total en intereses</div>
+            <div class="sh-sublabel" style="color:rgba(255,255,255,0.7)" id="simAhorroIntSub">Activa módulos para ver el impacto</div>
+          </div>
+          <div class="sh-amount" id="simAhorroIntereses">—</div>
+        </div>
+
+        <div class="note">
+          <strong>Supuestos:</strong> Asume aplicación única al mes 4 del crédito bancario (ene/2027, tras 3 pagos ya realizados oct–dic). El finiquito liquida Infonavit primero; remanente + ahorro acumulado van al principal de Banamex. Se recalcula pago manteniendo plazo restante y tasa original. Verificar con Banamex condiciones de pre-pago sin penalización.
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btnReset">Restablecer</button>
+        <button class="btn primary" id="btnPrint">Imprimir corrida</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <footer>
+    Instrumento de simulación · Resultados estimativos · Validar con broker
+  </footer>
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
