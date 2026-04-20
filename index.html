@@ -337,7 +337,7 @@
             </div>
           </div>
           <div class="field">
-            <label>% a cargo mío</label>
+            <label>% a cargo mío <span class="hint" id="gastosPctHint">sincronizado con sección 01</span></label>
             <div class="input-wrap">
               <input type="number" id="gastosPct" class="has-suffix" value="45" step="1">
               <span class="suffix">%</span>
@@ -507,8 +507,8 @@
         <div class="breakdown-block">
           <div class="bt">Ajuste sugerido · crédito bancario</div>
           <div class="result-row"><span class="label">Crédito banco actual</span><span class="value" id="sugBancoOrig">—</span></div>
-          <div class="result-row"><span class="label">Excedente a solicitar</span><span class="value" id="sugExcedente">—</span></div>
-          <div class="result-row total"><span class="label">Crédito banco sugerido</span><span class="value" id="sugBancoFinal">—</span></div>
+          <div class="result-row"><span class="label" id="sugAjusteLabel">Ajuste recomendado</span><span class="value" id="sugExcedente">—</span></div>
+          <div class="result-row total"><span class="label">Crédito banco óptimo</span><span class="value" id="sugBancoFinal">—</span></div>
         </div>
       </div>
 
