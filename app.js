@@ -610,11 +610,33 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
       amt.textContent = '− ' + fmt.format(Math.abs(balanceLiquido));
     }
 
-    // Sugerencia al broker
-    const excedenteSolicitar = balanceLiquido < 0 ? Math.abs(balanceLiquido) : 0;
+    // Sugerencia al broker — crédito bancario óptimo
+    // Lógica: el crédito debe ser exactamente lo necesario para que balance líquido = 0
+    // Si hay excedente, reducir el crédito; si hay déficit, aumentarlo
+    const ajusteCredito = -balanceLiquido; // si balance > 0, ajuste es negativo (reducir); si < 0, positivo (aumentar)
+    const creditoBancoOptimo = Math.max(0, credBco + ajusteCredito);
+
     set('sugBancoOrig', fmt.format(credBco));
-    set('sugExcedente', excedenteSolicitar > 0 ? '+ ' + fmt.format(excedenteSolicitar) : fmt.format(0));
-    set('sugBancoFinal', fmt.format(credBco + excedenteSolicitar));
+
+    const sugExcEl = document.getElementById('sugExcedente');
+    const sugLabelEl = document.getElementById('sugAjusteLabel');
+    if (ajusteCredito > 0) {
+      // Déficit: pedir más
+      sugLabelEl.textContent = 'Monto adicional a solicitar';
+      sugExcEl.textContent = '+ ' + fmt.format(ajusteCredito);
+      sugExcEl.style.color = 'var(--negative)';
+    } else if (ajusteCredito < 0) {
+      // Excedente: pedir menos
+      sugLabelEl.textContent = 'Reducción recomendada';
+      sugExcEl.textContent = '− ' + fmt.format(Math.abs(ajusteCredito));
+      sugExcEl.style.color = 'var(--positive)';
+    } else {
+      sugLabelEl.textContent = 'Ajuste recomendado';
+      sugExcEl.textContent = fmt.format(0);
+      sugExcEl.style.color = 'var(--ink)';
+    }
+
+    set('sugBancoFinal', fmt.format(creditoBancoOptimo));
 
     // ========= SIMULADOR DE PRE-PAGOS =========
     const finiquitoActivo = document.getElementById('tgFiniquito').classList.contains('active');
@@ -810,8 +832,48 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     }
   }
 
-  document.querySelectorAll('input[type="number"]').forEach(inp => {
+document.querySelectorAll('input[type="number"]').forEach(inp => {
     inp.addEventListener('input', calcular);
+  });
+
+  // Sincronización % participación ↔ % gastos notariales
+  // Si el usuario no ha modificado manualmente gastosPct, se sincroniza con participacion
+  let gastosPctManualOverride = false;
+  const participacionInput = document.getElementById('participacion');
+  const gastosPctInput = document.getElementById('gastosPct');
+  const gastosPctHint = document.getElementById('gastosPctHint');
+
+  gastosPctInput.addEventListener('input', (e) => {
+    // Detectar si el usuario modificó manualmente (no vía sync programático)
+    if (!e.isTrusted) return; // cambio programático, ignorar
+    const participacionVal = parseFloat(participacionInput.value) || 0;
+    const gastosVal = parseFloat(gastosPctInput.value) || 0;
+    if (Math.abs(gastosVal - participacionVal) > 0.01) {
+      gastosPctManualOverride = true;
+      gastosPctHint.textContent = 'override manual · doble click para resincronizar';
+      gastosPctHint.style.color = 'var(--warning)';
+    } else {
+      gastosPctManualOverride = false;
+      gastosPctHint.textContent = 'sincronizado con sección 01';
+      gastosPctHint.style.color = 'var(--ink-muted)';
+    }
+  });
+
+  // Doble click en gastosPct para resincronizar
+  gastosPctInput.addEventListener('dblclick', () => {
+    gastosPctManualOverride = false;
+    gastosPctInput.value = participacionInput.value;
+    gastosPctHint.textContent = 'sincronizado con sección 01';
+    gastosPctHint.style.color = 'var(--ink-muted)';
+    calcular();
+  });
+
+  // Cuando cambia participacion, si no hay override, sincronizar gastosPct
+  participacionInput.addEventListener('input', () => {
+    if (!gastosPctManualOverride) {
+      gastosPctInput.value = participacionInput.value;
+    }
+    // calcular() ya se dispara por el listener general
   });
 
   document.getElementById('btnReset').addEventListener('click', () => {
