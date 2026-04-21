@@ -241,6 +241,18 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     const miParte = precio * (participacion / 100);
     set('miParte', fmt.format(miParte));
 
+    // === Textos dinámicos basados en % de participación ===
+    const pctStr = participacion.toFixed(0) + '%';
+    const pctParejaStr = (100 - participacion).toFixed(0) + '%';
+    document.getElementById('headerEyebrow').textContent =
+      `Corrida Hipotecaria · Mi parte (${pctStr})`;
+    document.getElementById('headerDesc').textContent =
+      `Simulador enfocado en mi ${pctStr} de la propiedad. La parte de mi pareja (${pctParejaStr}) ya está cubierta por separado e incluye sus propios gastos notariales.`;
+    document.getElementById('notarioSectionTitle').textContent =
+      `Gastos notariales (mi ${pctStr})`;
+    document.getElementById('checkEngancheLabel').textContent =
+      `Enganche mi parte (${pctStr})`;
+
     // Recursos propios
     const ahorroFirme = num('ahorroFirme');
     const ahorroExtra = num('ahorroExtra');
@@ -611,21 +623,25 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     }
 
     // Sugerencia al broker — crédito bancario óptimo
-    // Lógica: el crédito debe ser exactamente lo necesario para que balance líquido = 0
-    // Si hay excedente, reducir el crédito; si hay déficit, aumentarlo
-    const ajusteCredito = -balanceLiquido; // si balance > 0, ajuste es negativo (reducir); si < 0, positivo (aumentar)
+    // Lógica: el crédito debe ser exactamente lo necesario para que NO haya déficit líquido ni excedente
+    // Usamos deficitTotal (métrica de liquidez REAL) en vez de balanceLiquido (que mezcla créditos + recursos)
+    //
+    //   Si deficitTotal > 0 (falta liquidez real): aumentar crédito por ese monto
+    //   Si deficitTotal < 0 (sobra liquidez): reducir crédito por el excedente líquido
+    //
+    const ajusteCredito = deficitTotal; // déficit (+) → aumentar; excedente (−) → reducir
     const creditoBancoOptimo = Math.max(0, credBco + ajusteCredito);
 
     set('sugBancoOrig', fmt.format(credBco));
 
     const sugExcEl = document.getElementById('sugExcedente');
     const sugLabelEl = document.getElementById('sugAjusteLabel');
-    if (ajusteCredito > 0) {
+    if (ajusteCredito > 1) {
       // Déficit: pedir más
       sugLabelEl.textContent = 'Monto adicional a solicitar';
       sugExcEl.textContent = '+ ' + fmt.format(ajusteCredito);
       sugExcEl.style.color = 'var(--negative)';
-    } else if (ajusteCredito < 0) {
+    } else if (ajusteCredito < -1) {
       // Excedente: pedir menos
       sugLabelEl.textContent = 'Reducción recomendada';
       sugExcEl.textContent = '− ' + fmt.format(Math.abs(ajusteCredito));
@@ -830,9 +846,107 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
       document.getElementById('simAhorroIntSub').textContent = 'Activa módulos para ver el impacto';
       set('comboAplicacion', '—');
     }
+
+    // === ANÁLISIS DE SENSIBILIDAD DE PARTICIPACIÓN ===
+    renderSensibilidad({
+      precio, credInf, credBco, tasaBco, plazoBco,
+      recursoPropio, gastosTotalNot, gastosTit,
+      comBco, avaluo, comInf, notarioConsolidado,
+      segVida, segDanos, participacionActual: participacion
+    });
   }
 
-document.querySelectorAll('input[type="number"]').forEach(inp => {
+  // Render de tabla de sensibilidad al % de participación
+  function renderSensibilidad(params) {
+    const {
+      precio, credInf, credBco, tasaBco, plazoBco,
+      recursoPropio, gastosTotalNot, gastosTit,
+      comBco, avaluo, comInf, notarioConsolidado,
+      segVida, segDanos, participacionActual
+    } = params;
+
+    const tbody = document.getElementById('sensitivityBody');
+    const insight = document.getElementById('sensitivityInsight');
+    if (!tbody) return;
+
+    const rangos = [];
+    // Barrido 38% a 50% en pasos de 1%
+    for (let p = 38; p <= 50; p++) {
+      const miParte = precio * (p / 100);
+      const miNotario = gastosTotalNot * (p / 100);
+      const miNotarioLiq = notarioConsolidado ? 0 : miNotario;
+
+      const aporteRequerido = Math.max(0, miParte - credInf - credBco);
+      const gastosLiquidos = miNotarioLiq + gastosTit + comBco + avaluo + comInf;
+      const liquidezReq = aporteRequerido + gastosLiquidos;
+      const deficit = liquidezReq - recursoPropio;
+      const creditoOpt = Math.max(0, credBco + deficit);
+
+      // Pago mensual con crédito óptimo
+      const pagoPI = pagoFrances(creditoOpt, tasaBco, plazoBco);
+      const pagoTotal = pagoPI + segVida + segDanos;
+
+      rangos.push({ p, miParte, miNotario, deficit, creditoOpt, pagoTotal });
+    }
+
+    // Encontrar el punto óptimo (déficit mínimo absoluto, idealmente 0 o negativo pequeño)
+    const optimo = rangos.reduce((best, r) => {
+      if (r.deficit <= 0 && (best === null || r.p > best.p)) return r;
+      return best;
+    }, null) || rangos.reduce((best, r) =>
+      Math.abs(r.deficit) < Math.abs(best.deficit) ? r : best, rangos[0]);
+
+    // Render tabla
+    tbody.innerHTML = rangos.map(r => {
+      const isCurrent = r.p === Math.round(participacionActual);
+      const isOptimal = r.p === optimo.p;
+      const deficitColor = r.deficit > 1 ? 'var(--negative)' : r.deficit < -1 ? 'var(--positive)' : 'var(--ink)';
+      const deficitText = r.deficit > 1
+        ? '+ ' + fmt.format(r.deficit)
+        : r.deficit < -1
+          ? '− ' + fmt.format(Math.abs(r.deficit))
+          : fmt.format(0);
+
+      let bgStyle = '';
+      let badge = '';
+      if (isCurrent && isOptimal) {
+        bgStyle = 'background:rgba(61,90,61,0.12);font-weight:500';
+        badge = ' <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--positive);letter-spacing:0.08em">ACTUAL · ÓPTIMO</span>';
+      } else if (isCurrent) {
+        bgStyle = 'background:rgba(122,106,79,0.08);font-weight:500';
+        badge = ' <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--accent);letter-spacing:0.08em">ACTUAL</span>';
+      } else if (isOptimal) {
+        bgStyle = 'background:rgba(61,90,61,0.06)';
+        badge = ' <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--positive);letter-spacing:0.08em">ÓPTIMO</span>';
+      }
+
+      return `<tr style="border-bottom:1px dotted var(--line-soft);${bgStyle}">
+        <td style="padding:8px 6px;font-family:'JetBrains Mono',monospace">${r.p}%${badge}</td>
+        <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt.format(r.miParte)}</td>
+        <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink-muted)">${fmt.format(r.miNotario)}</td>
+        <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;color:${deficitColor}">${deficitText}</td>
+        <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt.format(r.creditoOpt)}</td>
+        <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt.format(r.pagoTotal)}</td>
+      </tr>`;
+    }).join('');
+
+    // Insight textual
+    const actual = rangos.find(r => r.p === Math.round(participacionActual));
+    if (actual && optimo) {
+      if (actual.p === optimo.p) {
+        insight.innerHTML = `<strong>Estás en el punto óptimo.</strong> Tu participación del ${actual.p}% equilibra recursos líquidos con tu aportación al enganche y gastos notariales, sin sobrar ni faltar efectivo.`;
+      } else if (actual.deficit > 1) {
+        const diff = Math.abs(actual.p - optimo.p);
+        insight.innerHTML = `<strong>Tu ${actual.p}% actual genera déficit de ${fmt.format(actual.deficit)}.</strong> Bajando a <strong>${optimo.p}%</strong> eliminarías el déficit (mi parte baja ${fmt.format(actual.miParte - optimo.miParte)}), y el crédito bancario sería de ${fmt.format(optimo.creditoOpt)} con pago mensual de ${fmt.format(optimo.pagoTotal)}.`;
+      } else {
+        const diff = Math.abs(actual.p - optimo.p);
+        const ahorroCredito = actual.creditoOpt - optimo.creditoOpt;
+        insight.innerHTML = `<strong>Tienes margen para subir a ${optimo.p}%.</strong> Con ${optimo.p}% aumentas tu parte en ${fmt.format(optimo.miParte - actual.miParte)}, el crédito bancario quedaría en ${fmt.format(optimo.creditoOpt)} (${ahorroCredito > 0 ? '−' : '+'}${fmt.format(Math.abs(ahorroCredito))} vs actual), y el pago mensual sería ${fmt.format(optimo.pagoTotal)}. Aprovecharías mejor tu liquidez.`;
+      }
+    }
+  }
+
+  document.querySelectorAll('input[type="number"]').forEach(inp => {
     inp.addEventListener('input', calcular);
   });
 
