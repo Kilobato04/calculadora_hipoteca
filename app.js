@@ -1077,6 +1077,221 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     }
   });
 
+  // ============================================================
+  // PERSISTENCIA · Google Sheets vía Apps Script webhook
+  // ============================================================
+  //
+  // CONFIGURACIÓN:
+  // 1. Despliega el Apps Script (ver apps-script.gs) como web app
+  // 2. Pega la URL del webhook y el token aquí abajo
+  // 3. El token debe coincidir con SECRET_TOKEN del Apps Script
+  //
+  // Si dejas WEBHOOK_URL vacío, los botones mostrarán un mensaje de config
+  //
+  const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz6plFCCfONtd_6fL3Xi_BtoF9KL8aVVJ8oXdciR308Lc1z_5seTnGN8DDZg4OqKUoY0Q/exec'; // ← pega aquí la URL del Apps Script (termina en /exec)
+  const WEBHOOK_TOKEN = 'mi-hipoteca-2026-OSJS-xyz789abc'; // ← pega aquí el SECRET_TOKEN del Apps Script
+
+  // Campos con inputs numéricos/texto
+  const FIELD_IDS = [
+    'precioCasa', 'participacion',
+    'ahorroFirme', 'ahorroExtra', 'saldoSubcuenta',
+    'creditoInfonavit', 'plazoInfonavit', 'tasaInfonavit', 'catInfonavit',
+    'retencionMensual', 'fondoProteccion', 'aportacionPatronal',
+    'gastosTitulacionPct', 'comisionInfonavit',
+    'creditoBanco', 'plazoBanco', 'tasaBanco', 'catBanco',
+    'comisionBanco', 'avaluo',
+    'seguroVida', 'seguroDanos',
+    'gastosNotarialesTotal', 'gastosPct',
+    'liquidacion', 'liquidacionFecha',
+    'ingresoNeto', 'dtiTarget',
+    'penalizacion', 'ahorroMensual', 'mesesAhorro', 'aguinaldo',
+    'objetivoMensual'
+  ];
+
+  // Toggles (booleanos)
+  const TOGGLE_IDS = {
+    seguroVidaActivo: 'tgSeguroVida',
+    seguroDanosActivo: 'tgSeguroDanos',
+    notarioConsolidado: 'tgNotarioConsolidado',
+    finiquitoActivo: 'tgFiniquito',
+    ahorroActivo: 'tgAhorro'
+  };
+
+  function leerTextoDesplegado(id) {
+    // Lee el contenido de textContent y limpia formato de moneda/porcentaje
+    const el = document.getElementById(id);
+    if (!el) return '';
+    return (el.textContent || '').trim();
+  }
+
+  function recolectarDatos(nombreEscenario, notas) {
+    const data = {
+      escenario_nombre: nombreEscenario || '(sin nombre)',
+      notas: notas || ''
+    };
+
+    // Inputs de valor
+    FIELD_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        const v = el.value;
+        // Convertir a número si parece numérico; dejar como texto si no
+        const n = parseFloat(v);
+        data[id] = (!isNaN(n) && isFinite(n)) ? n : v;
+      }
+    });
+
+    // Toggles
+    Object.keys(TOGGLE_IDS).forEach(dataKey => {
+      const el = document.getElementById(TOGGLE_IDS[dataKey]);
+      data[dataKey] = el ? el.classList.contains('active') : false;
+    });
+
+    // Snapshot de resultados calculados (lectura del DOM)
+    // Extrae el número del formato de moneda
+    const parseMoney = (str) => {
+      if (!str) return null;
+      const cleaned = str.replace(/[^\d.-]/g, '');
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? null : n;
+    };
+
+    data.resultado_miParte = parseMoney(leerTextoDesplegado('miParte'));
+    data.resultado_pagoMensualTotal = parseFloat(
+      (document.getElementById('pagoMensualTotal').textContent || '0').replace(/[^\d.-]/g, '')
+    );
+    data.resultado_pagoInfonavit = parseMoney(leerTextoDesplegado('pagoInfonavit'));
+    data.resultado_pagoBanco = parseMoney(leerTextoDesplegado('pagoBanco'));
+    data.resultado_creditoBancoOptimo = parseMoney(leerTextoDesplegado('sugBancoFinal'));
+
+    // Déficit total: lo extraemos del texto del monto principal
+    const deficitStr = leerTextoDesplegado('deficitMainAmount');
+    const deficitNum = parseMoney(deficitStr);
+    // Si tenía "+" es excedente (positivo), si "−" es déficit (negativo para nosotros)
+    // En el schema, deficitTotal positivo = déficit (falta), negativo = excedente
+    const esExcedente = deficitStr.includes('+');
+    data.resultado_deficitTotal = deficitNum !== null
+      ? (esExcedente ? -Math.abs(deficitNum) : Math.abs(deficitNum))
+      : null;
+
+    // DTI actual resultante
+    const ingreso = parseFloat(document.getElementById('ingresoNeto').value) || 0;
+    if (ingreso > 0 && data.resultado_pagoMensualTotal) {
+      data.resultado_dtiActual = +((data.resultado_pagoMensualTotal / ingreso) * 100).toFixed(2);
+    } else {
+      data.resultado_dtiActual = null;
+    }
+
+    return data;
+  }
+
+  function mostrarEstado(tipo, mensaje) {
+    const el = document.getElementById('persistStatus');
+    el.className = 'persist-status ' + tipo;
+    el.textContent = mensaje;
+    if (tipo === 'ok') {
+      setTimeout(() => { el.className = 'persist-status'; el.textContent = ''; }, 5000);
+    }
+  }
+
+  // Guardar escenario
+  document.getElementById('btnGuardarEscenario').addEventListener('click', async () => {
+    if (!WEBHOOK_URL || !WEBHOOK_TOKEN) {
+      mostrarEstado('err', '⚠ Configura WEBHOOK_URL y WEBHOOK_TOKEN en app.js');
+      return;
+    }
+
+    const nombre = document.getElementById('escenarioNombre').value.trim();
+    const notas = document.getElementById('escenarioNotas').value.trim();
+    if (!nombre) {
+      mostrarEstado('err', 'Ingresa un nombre para el escenario antes de guardar');
+      document.getElementById('escenarioNombre').focus();
+      return;
+    }
+
+    mostrarEstado('loading', 'Guardando escenario...');
+    try {
+      const data = recolectarDatos(nombre, notas);
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        // Apps Script no acepta preflight CORS con application/json; usamos text/plain
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ token: WEBHOOK_TOKEN, data: data })
+      });
+      const result = await res.json();
+      if (result.ok) {
+        mostrarEstado('ok', `✓ Guardado en fila ${result.row}`);
+        // Limpiar inputs para el próximo escenario
+        document.getElementById('escenarioNombre').value = '';
+        document.getElementById('escenarioNotas').value = '';
+      } else {
+        mostrarEstado('err', '✗ ' + (result.error || 'Error desconocido'));
+      }
+    } catch (err) {
+      mostrarEstado('err', '✗ Error de red: ' + err.message);
+    }
+  });
+
+  // Cargar último escenario guardado
+  document.getElementById('btnCargarUltimo').addEventListener('click', async () => {
+    if (!WEBHOOK_URL || !WEBHOOK_TOKEN) {
+      mostrarEstado('err', '⚠ Configura WEBHOOK_URL y WEBHOOK_TOKEN en app.js');
+      return;
+    }
+    if (!confirm('¿Cargar el último escenario guardado? Se reemplazarán los valores actuales.')) return;
+
+    mostrarEstado('loading', 'Cargando...');
+    try {
+      const url = `${WEBHOOK_URL}?token=${encodeURIComponent(WEBHOOK_TOKEN)}`;
+      const res = await fetch(url, { method: 'GET' });
+      const result = await res.json();
+      if (!result.ok) {
+        mostrarEstado('err', '✗ ' + (result.error || 'Error desconocido'));
+        return;
+      }
+      if (!result.data) {
+        mostrarEstado('err', 'Sin escenarios guardados todavía');
+        return;
+      }
+      aplicarDatosACalculadora(result.data);
+      mostrarEstado('ok', `✓ Cargado escenario "${result.data.escenario_nombre || '(sin nombre)'}" (fila ${result.row})`);
+    } catch (err) {
+      mostrarEstado('err', '✗ Error de red: ' + err.message);
+    }
+  });
+
+  function aplicarDatosACalculadora(data) {
+    // Aplicar valores a inputs
+    FIELD_IDS.forEach(id => {
+      if (data[id] !== undefined && data[id] !== null && data[id] !== '') {
+        const el = document.getElementById(id);
+        if (el) el.value = data[id];
+      }
+    });
+
+    // Aplicar toggles
+    Object.keys(TOGGLE_IDS).forEach(dataKey => {
+      const el = document.getElementById(TOGGLE_IDS[dataKey]);
+      if (!el) return;
+      const deseado = data[dataKey] === true || data[dataKey] === 'SÍ';
+      const actual = el.classList.contains('active');
+      if (deseado !== actual) {
+        el.click(); // usa el handler existente para sincronizar estado visible
+      }
+    });
+
+    // Nombre del escenario cargado en el input
+    if (data.escenario_nombre) {
+      document.getElementById('escenarioNombre').value = data.escenario_nombre;
+    }
+    if (data.notas) {
+      document.getElementById('escenarioNotas').value = data.notas;
+    }
+
+    // Recalcular toda la hoja
+    calcular();
+  }
+
   document.getElementById('btnReset').addEventListener('click', () => {
     if (confirm('¿Restablecer todos los valores?')) location.reload();
   });
