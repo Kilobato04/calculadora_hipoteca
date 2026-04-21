@@ -309,6 +309,12 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     const liquidacion = num('liquidacion');
     set('liquidacionDisplay', '+ ' + fmt.format(liquidacion));
 
+    // Capacidad de pago (DTI)
+    const ingresoNeto = num('ingresoNeto');
+    const dtiTargetVal = num('dtiTarget');
+    const pagoMaxSaludable = ingresoNeto * (dtiTargetVal / 100);
+    document.getElementById('pagoMaxSaludable').value = Math.round(pagoMaxSaludable).toLocaleString('es-MX');
+
     // Summary
     const pagoMensualTotal = egresoMensualInf + pagoTotalBco;
     set('pagoMensualTotal', Math.round(pagoMensualTotal).toLocaleString('es-MX'));
@@ -690,7 +696,10 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     const finiquitoActivo = document.getElementById('tgFiniquito').classList.contains('active');
     const ahorroActivo = document.getElementById('tgAhorro').classList.contains('active');
 
-    const finiquitoBruto = num('finiquitoMonto');
+    // El finiquito es el mismo monto que la liquidación declarada en sección 06
+    // Mantenemos el campo `finiquitoMonto` visible pero siempre refleja `liquidacion`
+    document.getElementById('finiquitoMonto').value = liquidacion;
+    const finiquitoBruto = liquidacion;
     const penalizacion = num('penalizacion');
     const finiquitoNeto = finiquitoBruto * (1 - penalizacion / 100);
 
@@ -884,7 +893,8 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
       precio, credInf, credBco, tasaBco, plazoBco,
       recursoPropio, gastosTotalNot, gastosTit,
       comBco, avaluo, comInf, notarioConsolidado,
-      segVida, segDanos, participacionActual: participacion
+      segVida, segDanos, participacionActual: participacion,
+      egresoMensualInf, ingresoNeto: num('ingresoNeto'), dtiTarget: num('dtiTarget')
     });
   }
 
@@ -894,39 +904,69 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
       precio, credInf, credBco, tasaBco, plazoBco,
       recursoPropio, gastosTotalNot, gastosTit,
       comBco, avaluo, comInf, notarioConsolidado,
-      segVida, segDanos, participacionActual
+      segVida, segDanos, participacionActual,
+      egresoMensualInf, ingresoNeto, dtiTarget
     } = params;
 
     const tbody = document.getElementById('sensitivityBody');
     const insight = document.getElementById('sensitivityInsight');
     if (!tbody) return;
 
+    // Capacidad de pago mensual derivada del DTI
+    const pagoMaxTotal = ingresoNeto * (dtiTarget / 100);
+
     const rangos = [];
     // Barrido 38% a 50% en pasos de 1%
     for (let p = 38; p <= 50; p++) {
       const miParte = precio * (p / 100);
       const miNotario = gastosTotalNot * (p / 100);
-      const miNotarioLiq = notarioConsolidado ? 0 : miNotario;
 
-      const aporteRequerido = Math.max(0, miParte - credInf - credBco);
-      const gastosLiquidos = miNotarioLiq + gastosTit + comBco + avaluo + comInf;
-      const liquidezReq = aporteRequerido + gastosLiquidos;
-      const deficit = liquidezReq - recursoPropio;
-      const creditoOpt = Math.max(0, credBco + deficit);
+      // Crédito óptimo al cierre para este %
+      // Derivado de liquidez_req = recurso_propio
+      // miParte - credInf - (credOpt - notarioConsol) + gastosObligLiq + notarioLiq = recursoPropio
+      // Si notario consolidado:
+      //   credOpt = miParte - credInf + miNotario + gastosObligLiq - recursoPropio
+      // Si no:
+      //   credOpt = miParte - credInf + gastosObligLiq + miNotario - recursoPropio
+      // (resulta el mismo en ambos casos porque los conceptos suman igual)
+      const gastosObligLiq = gastosTit + comBco + avaluo + comInf;
+      const creditoOpt = Math.max(0, miParte - credInf + miNotario + gastosObligLiq - recursoPropio);
+
+      // Déficit al cierre con el crédito ACTUAL (fijo en credBco), NO el óptimo
+      // Esto muestra cuánto faltaría/sobraría si se mantiene el crédito actual
+      const credBcoParaCompra = notarioConsolidado ? Math.max(0, credBco - miNotario) : credBco;
+      const aporteLiq = Math.max(0, miParte - credInf - credBcoParaCompra);
+      const gastosNotarioLiq = notarioConsolidado ? 0 : miNotario;
+      const liquidezReq = aporteLiq + gastosObligLiq + gastosNotarioLiq;
+      const deficit = liquidezReq - recurso_propio_safe(recursoPropio);
 
       // Pago mensual con crédito óptimo
       const pagoPI = pagoFrances(creditoOpt, tasaBco, plazoBco);
-      const pagoTotal = pagoPI + segVida + segDanos;
+      const pagoTotalBanco = pagoPI + segVida + segDanos;
+      const pagoTotalMensual = egresoMensualInf + pagoTotalBanco;
+      const dtiResultante = ingresoNeto > 0 ? (pagoTotalMensual / ingresoNeto) * 100 : 0;
+      const dtiOK = pagoTotalMensual <= pagoMaxTotal;
 
-      rangos.push({ p, miParte, miNotario, deficit, creditoOpt, pagoTotal });
+      rangos.push({
+        p, miParte, miNotario, deficit, creditoOpt,
+        pagoTotal: pagoTotalMensual, dti: dtiResultante, dtiOK
+      });
     }
 
-    // Encontrar el punto óptimo (déficit mínimo absoluto, idealmente 0 o negativo pequeño)
-    const optimo = rangos.reduce((best, r) => {
-      if (r.deficit <= 0 && (best === null || r.p > best.p)) return r;
-      return best;
-    }, null) || rangos.reduce((best, r) =>
-      Math.abs(r.deficit) < Math.abs(best.deficit) ? r : best, rangos[0]);
+    // ==== Criterio de óptimo ====
+    // El óptimo realista es el % MÁS ALTO que cumple AMBOS:
+    //   (a) deficit ≤ 0 (liquidez al cierre alcanza)
+    //   (b) dtiOK (pago mensual cabe en el DTI target)
+    // Si no existe ningún % que cumpla ambos, mostrar el que más se acerque
+    const candidatos = rangos.filter(r => r.deficit <= 0 && r.dtiOK);
+    const optimo = candidatos.length > 0
+      ? candidatos[candidatos.length - 1]  // el % más alto que cumple ambos
+      : rangos.reduce((best, r) => {
+          // Fallback: el que tenga menos "dolor" combinado
+          const dolor = Math.max(0, r.deficit) / 100000 + Math.max(0, r.pagoTotal - pagoMaxTotal) / 1000;
+          const dolorBest = Math.max(0, best.deficit) / 100000 + Math.max(0, best.pagoTotal - pagoMaxTotal) / 1000;
+          return dolor < dolorBest ? r : best;
+        }, rangos[0]);
 
     // Render tabla
     tbody.innerHTML = rangos.map(r => {
@@ -938,6 +978,8 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
         : r.deficit < -1
           ? '− ' + fmt.format(Math.abs(r.deficit))
           : fmt.format(0);
+      const dtiColor = r.dtiOK ? 'var(--positive)' : 'var(--negative)';
+      const dtiIcon = r.dtiOK ? '✓' : '✗';
 
       let bgStyle = '';
       let badge = '';
@@ -955,10 +997,10 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
       return `<tr style="border-bottom:1px dotted var(--line-soft);${bgStyle}">
         <td style="padding:8px 6px;font-family:'JetBrains Mono',monospace">${r.p}%${badge}</td>
         <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt.format(r.miParte)}</td>
-        <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink-muted)">${fmt.format(r.miNotario)}</td>
         <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;color:${deficitColor}">${deficitText}</td>
         <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt.format(r.creditoOpt)}</td>
         <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt.format(r.pagoTotal)}</td>
+        <td style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;color:${dtiColor}">${r.dti.toFixed(1)}% ${dtiIcon}</td>
       </tr>`;
     }).join('');
 
@@ -966,17 +1008,20 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     const actual = rangos.find(r => r.p === Math.round(participacionActual));
     if (actual && optimo) {
       if (actual.p === optimo.p) {
-        insight.innerHTML = `<strong>Estás en el punto óptimo.</strong> Tu participación del ${actual.p}% equilibra recursos líquidos con tu aportación al enganche y gastos notariales, sin sobrar ni faltar efectivo.`;
-      } else if (actual.deficit > 1) {
-        const diff = Math.abs(actual.p - optimo.p);
-        insight.innerHTML = `<strong>Tu ${actual.p}% actual genera déficit de ${fmt.format(actual.deficit)}.</strong> Bajando a <strong>${optimo.p}%</strong> eliminarías el déficit (mi parte baja ${fmt.format(actual.miParte - optimo.miParte)}), y el crédito bancario sería de ${fmt.format(optimo.creditoOpt)} con pago mensual de ${fmt.format(optimo.pagoTotal)}.`;
+        insight.innerHTML = `<strong>Estás en el punto óptimo.</strong> Tu ${actual.p}% cumple ambos criterios: liquidez al cierre (${actual.deficit <= 0 ? 'con excedente de ' + fmt.format(-actual.deficit) : 'déficit ' + fmt.format(actual.deficit)}) y DTI sano (${actual.dti.toFixed(1)}% del ingreso neto, bajo el ${dtiTarget}% target).`;
       } else {
-        const diff = Math.abs(actual.p - optimo.p);
-        const ahorroCredito = actual.creditoOpt - optimo.creditoOpt;
-        insight.innerHTML = `<strong>Tienes margen para subir a ${optimo.p}%.</strong> Con ${optimo.p}% aumentas tu parte en ${fmt.format(optimo.miParte - actual.miParte)}, el crédito bancario quedaría en ${fmt.format(optimo.creditoOpt)} (${ahorroCredito > 0 ? '−' : '+'}${fmt.format(Math.abs(ahorroCredito))} vs actual), y el pago mensual sería ${fmt.format(optimo.pagoTotal)}. Aprovecharías mejor tu liquidez.`;
+        const direccion = optimo.p > actual.p ? 'subir' : 'bajar';
+        const motivoActual = [];
+        if (actual.deficit > 1) motivoActual.push(`déficit de ${fmt.format(actual.deficit)} al cierre`);
+        if (!actual.dtiOK) motivoActual.push(`pago mensual ${fmt.format(actual.pagoTotal)} excede el DTI target (${fmt.format(pagoMaxTotal)})`);
+
+        insight.innerHTML = `<strong>Óptimo recomendado: ${optimo.p}%.</strong> Tu ${actual.p}% actual ${motivoActual.length ? 'presenta: ' + motivoActual.join(' · ') : 'es viable pero deja margen desaprovechado'}. ${direccion === 'bajar' ? 'Bajando' : 'Subiendo'} a ${optimo.p}% obtendrías: pago mensual ${fmt.format(optimo.pagoTotal)} (DTI ${optimo.dti.toFixed(1)}%), crédito bancario ${fmt.format(optimo.creditoOpt)}, mi parte ${fmt.format(optimo.miParte)}.`;
       }
     }
   }
+
+  // Helper: recurso propio seguro
+  function recurso_propio_safe(v) { return v || 0; }
 
   document.querySelectorAll('input[type="number"]').forEach(inp => {
     inp.addEventListener('input', calcular);
