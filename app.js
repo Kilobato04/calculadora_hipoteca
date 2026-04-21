@@ -423,25 +423,38 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     set('gnTotalMi', fmt.format(totalGastosMi));
 
     // Balance líquido
-    const excedenteRecursos = recursosTotales - miParte;
-    const gastosACubrir = miGastosNotLiquidos + gastosTit + comBco + avaluo + comInf;
-    const balanceLiquido = excedenteRecursos - gastosACubrir;
-
-    // ========= VALIDACIÓN DETALLADA DE LIQUIDEZ AL CIERRE =========
-    // Para cerrar la operación necesitas cubrir al cierre (con recursos propios o crédito):
-    //   - Mi parte del valor (45%) — cubierto por enganche + subcuenta + créditos
-    //   - Gastos notariales líquidos (0 si consolidados al crédito)
-    //   - Gastos titulación Infonavit (~1.4% del crédito)
-    //   - Comisión apertura banco + avalúo
-    //   - Comisión apertura Infonavit si aplica
-    // Los créditos cubren $credInf + $credBco del precio
-    // Los recursos propios deben cubrir: (miParte - credInf - credBco) + gastos
-
-    const aporteRequerido = miParte - credInf - credBco; // lo que debo poner de mis recursos al enganche
-    const liquidezRequeridaEnganche = Math.max(0, aporteRequerido);
-    const liquidezRequeridaTotal = liquidezRequeridaEnganche + gastosACubrir;
+    // ========= CÁLCULO UNIFICADO DE LIQUIDEZ AL CIERRE =========
+    // Una sola fuente de verdad para todas las secciones que evalúan déficit/excedente.
+    //
+    // Premisa: al cierre necesitas cubrir CON LIQUIDEZ los siguientes conceptos:
+    //   a) La parte de mi 45% que los créditos NO alcanzan a cubrir
+    //      - El crédito Banamex puede estar inflado para incluir notario (consolidado)
+    //      - Por eso usamos credBcoParaCompra, no credBco
+    //   b) Gastos obligatoriamente líquidos:
+    //      - Titulación Infonavit (no se puede consolidar)
+    //      - Comisiones apertura + avalúo
+    //      - Notario líquido (si NO está consolidado en el crédito)
+    //
+    // Si recursoPropio cubre todo → excedente
+    // Si no alcanza → déficit
+    //
+    const aporteLiquidoEnganche = Math.max(0, miParte - credInf - credBcoParaCompra);
+    const gastosObligatoriosLiquidos = gastosTit + comBco + avaluo + comInf;
+    const gastosNotarioLiquido = notarioConsolidado ? 0 : miGastosNot;
+    const liquidezRequeridaTotal = aporteLiquidoEnganche + gastosObligatoriosLiquidos + gastosNotarioLiquido;
     const liquidezDisponible = recursoPropio;
+
+    // UNA SOLA MÉTRICA: positivo = déficit (falta); negativo = excedente (sobra)
     const deficitTotal = liquidezRequeridaTotal - liquidezDisponible;
+
+    // balanceLiquido y excedenteRecursos para retrocompatibilidad con las secciones viejas
+    // (ambas reflejan la misma realidad que deficitTotal, con signo invertido)
+    const balanceLiquido = -deficitTotal;
+    const excedenteRecursos = recursosTotales - miParte;
+    const gastosACubrir = gastosNotarioLiquido + gastosObligatoriosLiquidos;
+
+    // Variables legacy usadas más abajo en la sección de alerta
+    const liquidezRequeridaEnganche = aporteLiquidoEnganche;
 
     // Evaluar cada concepto individualmente: lo ideal es cubrir cada concepto
     // Pero como el dinero es fungible, el análisis es del total
@@ -653,6 +666,25 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
     }
 
     set('sugBancoFinal', fmt.format(creditoBancoOptimo));
+
+    // === Hint del crédito óptimo junto al input editable ===
+    // Muestra diferencia vs el actual y ofrece botón para aplicar
+    const creditoOptimoText = document.getElementById('creditoOptimoText');
+    const btnAplicarOptimo = document.getElementById('btnAplicarOptimo');
+    const diff = creditoBancoOptimo - credBco;
+    if (Math.abs(diff) < 100) {
+      creditoOptimoText.textContent = '✓ Monto óptimo al cierre';
+      creditoOptimoText.style.color = 'var(--positive)';
+      btnAplicarOptimo.style.display = 'none';
+    } else if (diff > 0) {
+      creditoOptimoText.innerHTML = `Óptimo: <strong style="color:var(--negative)">${fmt.format(creditoBancoOptimo)}</strong> (+${fmt.format(diff)})`;
+      btnAplicarOptimo.style.display = 'inline-block';
+      btnAplicarOptimo.dataset.target = Math.round(creditoBancoOptimo);
+    } else {
+      creditoOptimoText.innerHTML = `Óptimo: <strong style="color:var(--positive)">${fmt.format(creditoBancoOptimo)}</strong> (−${fmt.format(Math.abs(diff))})`;
+      btnAplicarOptimo.style.display = 'inline-block';
+      btnAplicarOptimo.dataset.target = Math.round(creditoBancoOptimo);
+    }
 
     // ========= SIMULADOR DE PRE-PAGOS =========
     const finiquitoActivo = document.getElementById('tgFiniquito').classList.contains('active');
@@ -988,6 +1020,16 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
       gastosPctInput.value = participacionInput.value;
     }
     // calcular() ya se dispara por el listener general
+  });
+
+  // Aplicar crédito óptimo sugerido al input editable
+  document.getElementById('btnAplicarOptimo').addEventListener('click', () => {
+    const btn = document.getElementById('btnAplicarOptimo');
+    const target = parseFloat(btn.dataset.target || '0');
+    if (target > 0) {
+      document.getElementById('creditoBanco').value = target;
+      calcular();
+    }
   });
 
   document.getElementById('btnReset').addEventListener('click', () => {
