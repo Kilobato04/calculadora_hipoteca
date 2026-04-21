@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Corrida Hipotecaria · Mi 45%</title>
+<title>Corrida Hipotecaria Personal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -15,9 +15,9 @@
 
   <header>
     <div class="title-block">
-      <div class="eyebrow">Corrida Hipotecaria · Mi parte (45%)</div>
+      <div class="eyebrow" id="headerEyebrow">Corrida Hipotecaria · Mi parte (45%)</div>
       <h1>Corrida <em>personal</em></h1>
-      <p>Simulador enfocado en mi 45% de la propiedad. La parte de mi pareja (55%) ya está cubierta por separado e incluye sus propios gastos notariales.</p>
+      <p id="headerDesc">Simulador enfocado en mi 45% de la propiedad. La parte de mi pareja (55%) ya está cubierta por separado e incluye sus propios gastos notariales.</p>
     </div>
     <div class="meta">
       <span>Firma tentativa</span>
@@ -318,7 +318,7 @@
       <!-- 5. Closing costs -->
       <div class="section">
         <div class="section-header">
-          <h2>Gastos notariales (mi 45%)</h2>
+          <h2 id="notarioSectionTitle">Gastos notariales (mi 45%)</h2>
           <span class="num">05</span>
         </div>
 
@@ -531,7 +531,7 @@
 
         <div class="result-list">
           <div class="result-row" id="checkEnganche">
-            <span class="label"><span class="deficit-icon" style="margin-right:6px">✓</span>Enganche mi parte (45%)</span>
+            <span class="label"><span class="deficit-icon" style="margin-right:6px">✓</span><span id="checkEngancheLabel">Enganche mi parte (45%)</span></span>
             <span class="value">—</span>
           </div>
           <div class="result-row" id="checkNotario">
@@ -799,6 +799,35 @@
         <div class="note">
           <strong>Supuestos:</strong> Asume aplicación única al mes 4 del crédito bancario (ene/2027, tras 3 pagos ya realizados oct–dic). El finiquito liquida Infonavit primero; remanente + ahorro acumulado van al principal de Banamex. Se recalcula pago manteniendo plazo restante y tasa original. Verificar con Banamex condiciones de pre-pago sin penalización.
         </div>
+      </div>
+
+      <!-- ANÁLISIS DE SENSIBILIDAD DE PARTICIPACIÓN -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Análisis de sensibilidad · % de participación</h2>
+          <span class="num">G</span>
+        </div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;line-height:1.55">
+          Barrido del <strong>% de participación</strong> (38%–50%) para encontrar el punto óptimo donde recursos propios ≈ necesidad líquida. Los créditos (Infonavit + Banamex) se mantienen fijos; sólo varía tu parte del valor.
+        </div>
+
+        <div style="overflow-x:auto;margin:0 -4px">
+          <table id="sensitivityTable" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="border-bottom:1px solid var(--line)">
+                <th style="padding:8px 6px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">%</th>
+                <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Mi parte</th>
+                <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Notario mi parte</th>
+                <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Déficit líquido</th>
+                <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Crédito óptimo</th>
+                <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Pago mensual</th>
+              </tr>
+            </thead>
+            <tbody id="sensitivityBody"></tbody>
+          </table>
+        </div>
+
+        <div id="sensitivityInsight" style="margin-top:14px;padding:14px 16px;background:var(--bg-soft);border-left:3px solid var(--accent);border-radius:2px;font-size:12px;color:var(--ink-soft);line-height:1.55">—</div>
       </div>
 
       <div class="actions">
