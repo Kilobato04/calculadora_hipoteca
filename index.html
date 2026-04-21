@@ -866,6 +866,25 @@
         <div id="sensitivityInsight" style="margin-top:14px;padding:14px 16px;background:var(--bg-soft);border-left:3px solid var(--accent);border-radius:2px;font-size:12px;color:var(--ink-soft);line-height:1.55">—</div>
       </div>
 
+      <!-- Panel persistencia · guardar escenario en Google Sheets -->
+      <div class="persist-panel">
+        <div class="persist-title">Guardar escenario</div>
+        <div class="persist-sub">Persiste esta configuración en Google Sheets con un nombre y notas para consultarla después.</div>
+        <div class="persist-inputs">
+          <div>
+            <input type="text" id="escenarioNombre" placeholder="Nombre del escenario (ej. 42% con liquidación Banamex)">
+          </div>
+          <div>
+            <input type="text" id="escenarioNotas" placeholder="Notas opcionales (ej. reunión broker 20/may)">
+          </div>
+        </div>
+        <div class="persist-actions">
+          <button class="btn primary" id="btnGuardarEscenario" style="flex:1">Guardar escenario</button>
+          <button class="btn" id="btnCargarUltimo" style="flex:1">Cargar último guardado</button>
+        </div>
+        <div class="persist-status" id="persistStatus"></div>
+      </div>
+
       <div class="actions">
         <button class="btn" id="btnReset">Restablecer</button>
         <button class="btn primary" id="btnPrint">Imprimir corrida</button>
