@@ -384,6 +384,38 @@
         </div>
       </div>
 
+      <!-- 7. Capacidad de pago (DTI) -->
+      <div class="section">
+        <div class="section-header">
+          <h2>Capacidad de pago mensual</h2>
+          <span class="num">07</span>
+        </div>
+        <div class="row three">
+          <div class="field">
+            <label>Ingreso mensual neto <span class="hint">MXN</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="ingresoNeto" class="has-prefix" value="85000" step="1000">
+            </div>
+          </div>
+          <div class="field">
+            <label>% DTI target <span class="hint">% ingreso a hipoteca</span></label>
+            <div class="input-wrap">
+              <input type="number" id="dtiTarget" class="has-suffix" value="33" step="1" min="15" max="50">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Pago máximo saludable <span class="hint">auto</span></label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="text" id="pagoMaxSaludable" class="has-prefix readonly" readonly>
+            </div>
+          </div>
+        </div>
+        <div class="note">DTI (Debt-to-Income) sano: 30-35% del ingreso neto destinado a pagos de vivienda. Incluye Infonavit + Banamex + seguros. Los bancos típicamente aprueban hasta 40%, pero por encima de 35% la carga financiera comienza a ser restrictiva. Ajusta el % según tu estilo de vida y otros compromisos.</div>
+      </div>
+
     </div>
 
     <!-- RIGHT: RESULTS -->
@@ -586,10 +618,10 @@
 
           <div class="row">
             <div class="field">
-              <label>Monto finiquito neto <span class="hint">MXN</span></label>
+              <label>Monto finiquito neto <span class="hint">sincronizado con sección 06</span></label>
               <div class="input-wrap">
                 <span class="prefix">$</span>
-                <input type="number" id="finiquitoMonto" class="has-prefix" value="1300000" step="50000">
+                <input type="number" id="finiquitoMonto" class="has-prefix readonly" value="1300000" step="50000" readonly style="cursor:default">
               </div>
             </div>
             <div class="field">
@@ -812,7 +844,7 @@
           <span class="num">G</span>
         </div>
         <div style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;line-height:1.55">
-          Barrido del <strong>% de participación</strong> (38%–50%) para encontrar el punto óptimo donde recursos propios ≈ necesidad líquida. Los créditos (Infonavit + Banamex) se mantienen fijos; sólo varía tu parte del valor.
+          Barrido del <strong>% de participación</strong> (38%–50%) evaluando dos criterios simultáneos: <strong>liquidez al cierre</strong> (suficiencia de recursos propios) y <strong>DTI mensual</strong> (sostenibilidad del pago vs capacidad definida en sección 07). El <strong>óptimo realista</strong> es el % más alto que cumple ambos.
         </div>
 
         <div style="overflow-x:auto;margin:0 -4px">
@@ -821,10 +853,10 @@
               <tr style="border-bottom:1px solid var(--line)">
                 <th style="padding:8px 6px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">%</th>
                 <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Mi parte</th>
-                <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Notario mi parte</th>
                 <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Déficit líquido</th>
                 <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Crédito óptimo</th>
                 <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">Pago mensual</th>
+                <th style="padding:8px 6px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--ink-muted);text-transform:uppercase">DTI</th>
               </tr>
             </thead>
             <tbody id="sensitivityBody"></tbody>
