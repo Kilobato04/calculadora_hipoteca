@@ -1088,8 +1088,8 @@ const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN',
   //
   // Si dejas WEBHOOK_URL vacío, los botones mostrarán un mensaje de config
   //
-  const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz6plFCCfONtd_6fL3Xi_BtoF9KL8aVVJ8oXdciR308Lc1z_5seTnGN8DDZg4OqKUoY0Q/exec'; // ← pega aquí la URL del Apps Script (termina en /exec)
-  const WEBHOOK_TOKEN = 'mi-hipoteca-2026-OSJS-xyz789abc'; // ← pega aquí el SECRET_TOKEN del Apps Script
+  const WEBHOOK_URL = ''; // ← pega aquí la URL del Apps Script (termina en /exec)
+  const WEBHOOK_TOKEN = ''; // ← pega aquí el SECRET_TOKEN del Apps Script
 
   // Campos con inputs numéricos/texto
   const FIELD_IDS = [
