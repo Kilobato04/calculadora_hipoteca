@@ -202,7 +202,7 @@
               <span class="prefix">$</span>
               <input type="number" id="creditoBanco" class="has-prefix" value="2100000" step="10000">
             </div>
-            <div id="creditoOptimoHint" style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:var(--ink-muted);font-style:italic">
+            <div id="creditoOptimoHint" style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:var(--ink-muted);font-style:italic;flex-wrap:wrap">
               <span id="creditoOptimoText">—</span>
               <button id="btnAplicarOptimo" style="font-family:'JetBrains Mono',monospace;font-size:9px;padding:4px 8px;background:var(--bg);border:1px solid var(--line);border-radius:2px;cursor:pointer;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.08em;display:none">Aplicar óptimo</button>
             </div>
@@ -252,7 +252,7 @@
 
         <div class="toggle-row" style="margin-top:18px;padding:12px 14px;background:var(--bg-soft);border-radius:3px;display:block">
           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--ink-muted);text-transform:uppercase;margin-bottom:10px">Configuración de seguros · impacta CAT</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          <div class="seguro-preset-grid">
             <button class="seguro-preset" data-preset="banamex" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 4px;background:var(--bg);border:1px solid var(--line);border-radius:2px;cursor:pointer;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Banamex bundle</button>
             <button class="seguro-preset active" data-preset="propio" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 4px;background:var(--ink);border:1px solid var(--ink);border-radius:2px;cursor:pointer;color:var(--bg);text-transform:uppercase;letter-spacing:0.04em">Pólizas propias</button>
             <button class="seguro-preset" data-preset="ninguno" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 4px;background:var(--bg);border:1px solid var(--line);border-radius:2px;cursor:pointer;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Sin seguros</button>
@@ -671,7 +671,7 @@
           <!-- OBJETIVO DE MENSUALIDAD -->
           <div style="background:var(--ink);color:var(--bg);padding:18px 20px;border-radius:3px;margin-bottom:16px;position:relative;overflow:hidden">
             <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--accent-soft);text-transform:uppercase;margin-bottom:10px">Objetivo · mensualidad post-aplicación</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center">
+            <div class="objetivo-grid">
               <div>
                 <label style="display:block;font-size:11px;color:rgba(244,241,236,0.6);margin-bottom:6px;letter-spacing:0.02em">Mensualidad objetivo (P+I + seguros)</label>
                 <div style="position:relative">
@@ -681,7 +681,7 @@
                 </div>
                 <div style="font-size:10px;color:rgba(244,241,236,0.45);margin-top:6px;font-style:italic">Meta: debajo de barrera psicológica $16K</div>
               </div>
-              <div style="text-align:right">
+              <div class="objetivo-right">
                 <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent-soft);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Ahorro mensual requerido</div>
                 <div style="font-family:'Fraunces',serif;font-size:32px;color:var(--bg);font-weight:500;line-height:1" id="ahorroRequerido">—</div>
                 <div style="font-size:11px;color:rgba(244,241,236,0.5);margin-top:6px" id="ahorroRequeridoSub">Calculando...</div>
