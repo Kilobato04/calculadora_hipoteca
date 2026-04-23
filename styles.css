@@ -18,8 +18,21 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* ============ ANTI-OVERFLOW DEFINITIVO ============ */
+  /*
+   * En CSS Grid/Flex los items tienen min-width:auto por defecto,
+   * lo que los hace explotar si un descendiente tiene contenido largo (nowrap, números, texto).
+   * Esto fuerza a TODOS los descendientes a respetar su contenedor.
+   */
   html, body {
-    overflow-x: hidden; /* previene scroll horizontal accidental en móvil */
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  body > *, .container, .container > *,
+  .grid, .grid > *, .inputs > *, .results > *,
+  .section, .section > *,
+  .row, .row > *, .field, .input-wrap {
+    min-width: 0;
     max-width: 100%;
   }
 
@@ -327,15 +340,19 @@
 
   /* Tabla de sensibilidad scroll horizontal en móvil */
   @media (max-width: 620px) {
-    #sensitivityTable { min-width: 560px; }
+    #sensitivityTable {
+      min-width: 460px;
+      font-size: 10px;
+    }
     #sensitivityTable th, #sensitivityTable td {
-      padding: 6px 4px !important;
-      font-size: 11px !important;
+      padding: 5px 3px !important;
+      font-size: 10px !important;
     }
   }
-  /* Wrapper siempre scrollable en móvil para que la tabla no rompa layout */
+  /* Wrapper scrolleable */
   .section > div[style*="overflow-x"] {
     -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
 
   .summary-card {
@@ -437,6 +454,11 @@
     font-size: 13px;
     color: var(--ink);
     white-space: nowrap;
+    min-width: 0;
+  }
+  /* En móvil permitir que los números largos hagan wrap si el label es largo */
+  @media (max-width: 380px) {
+    .result-row .value { white-space: normal; word-break: break-word; }
   }
   .result-row.total {
     padding: 14px 0 10px;
@@ -905,6 +927,10 @@
     color: var(--negative);
     font-weight: 500;
     white-space: nowrap;
+    min-width: 0;
+  }
+  @media (max-width: 480px) {
+    .deficit-option .opt-value { white-space: normal; }
   }
 
   footer {
@@ -1030,8 +1056,9 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
-  @media (max-width: 480px) {
-    .seguro-preset-grid { grid-template-columns: 1fr; }
+  @media (max-width: 600px) {
+    .seguro-preset-grid { grid-template-columns: 1fr; gap: 4px; }
+    .seguro-preset { font-size: 11px !important; padding: 10px 8px !important; }
   }
 
   .objetivo-grid {
