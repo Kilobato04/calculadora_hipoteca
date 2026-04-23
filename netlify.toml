@@ -13,13 +13,13 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
-# Cache largo para assets estáticos
+# Cache corto para iterar rápido durante desarrollo
 [[headers]]
   for = "/styles.css"
   [headers.values]
-    Cache-Control = "public, max-age=3600, must-revalidate"
+    Cache-Control = "public, max-age=60, must-revalidate"
 
 [[headers]]
   for = "/app.js"
   [headers.values]
-    Cache-Control = "public, max-age=3600, must-revalidate"
+    Cache-Control = "public, max-age=60, must-revalidate"
